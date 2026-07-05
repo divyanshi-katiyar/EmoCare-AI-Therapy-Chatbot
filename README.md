@@ -1,15 +1,18 @@
-# Mental Health Support Chatbot
+# EmoCare AI Therapy Chatbot
 
 This project is a Mental Health Support Chatbot built using [Streamlit](https://streamlit.io/) and [Gemini's 2.5-Flash Model](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash). It provides mental health support through a chat interface, offering sentiment analysis, mood tracking, and personalized coping strategies based on user input.
 
 ## Features
 
-- **Chat Interface**: Interact with the chatbot in a user-friendly chat interface.
-- **Sentiment Analysis**: Analyze the sentiment of user messages and categorize them into different emotions.
-- **Mood Tracking**: Track the user's mood over time based on their messages.
-- **Coping Strategies**: Provide personalized coping strategies based on the user's emotional state.
-- **Session Summaries**: Summarize the conversation and provide insights at the end of each session.
-- **Helpful Resources**: Provide links to immediate help resources for mental health support.
+## Features
+
+* **Interactive Chat Experience**: Engage in natural, real-time conversations through an intuitive and easy-to-use interface.
+* **Emotion Detection**: Understands the emotional tone of user messages to identify feelings such as happiness, sadness, anxiety, stress, or frustration.
+* **Mood Monitoring**: Keeps track of emotional patterns throughout the conversation, helping users become more aware of changes in their mood.
+* **Personalized Wellness Suggestions**: Recommends coping techniques, relaxation exercises, and self-care practices tailored to the user's emotional state.
+* **Conversation Summary**: Generates a concise summary of each session, highlighting key emotions and discussion points.
+* **Mental Health Resources**: Provides access to trusted support resources and guidance for users who may need additional help or immediate assistance.
+
 
 ## Installation
 
