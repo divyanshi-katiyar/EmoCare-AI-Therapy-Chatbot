@@ -29,9 +29,9 @@ st.markdown("""
 
 /* Main content width */
 .block-container {
-    max-width: 900px;
+    max-width: 950px;
     padding-top: 2rem;
-    padding-bottom: 5rem;
+    padding-bottom: 6rem;
 }
 
 /* Main title */
@@ -73,7 +73,7 @@ st.markdown("""
     background-color: #111827;
 }
 
-/* Chat messages */
+/* Chat message styling */
 [data-testid="stChatMessage"] {
     background-color: rgba(255, 255, 255, 0.04);
     border-radius: 15px;
@@ -91,6 +91,14 @@ st.markdown("""
     margin-top: 30px;
 }
 
+/* Footer */
+.footer {
+    text-align: center;
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 25px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -103,8 +111,6 @@ genai.configure(
     api_key=st.secrets["GEMINI_API_KEY"]
 )
 
-# IMPORTANT:
-# Keep the Gemini model name that works with your API key.
 model = genai.GenerativeModel(
     "gemini-3.1-flash-lite"
 )
@@ -120,37 +126,39 @@ def generate_response(prompt):
 
         response = model.generate_content(
             f"""
-            You are EmoCare, a compassionate AI mental health
-            support assistant.
+You are EmoCare, a compassionate AI emotional support assistant.
 
-            Your role is to listen to users and provide
-            empathetic, supportive, and encouraging responses.
+Your role is to listen to users and provide empathetic,
+supportive, thoughtful, and encouraging responses.
 
-            Keep your responses conversational, warm,
-            and easy to understand.
+Keep responses conversational, warm, helpful, and concise.
 
-            Important rules:
+Important rules:
 
-            - Do not diagnose mental health conditions.
-            - Do not prescribe medication.
-            - Do not claim to replace a therapist or doctor.
-            - Encourage professional help when appropriate.
-            - If a user appears to be in immediate danger or
-              expresses thoughts of self-harm, encourage them
-              to contact local emergency services or a crisis
-              support service immediately.
+- Do not diagnose mental health conditions.
+- Do not prescribe medication.
+- Do not claim to replace a therapist, psychologist, or doctor.
+- Encourage professional help when appropriate.
+- Do not make promises about confidentiality.
+- If a user appears to be in immediate danger or expresses
+  thoughts of suicide or self-harm, encourage them to contact
+  local emergency services or an appropriate crisis support
+  service immediately.
 
-            User message:
+User message:
 
-            {prompt}
-            """
+{prompt}
+"""
         )
 
         return response.text
 
     except Exception as e:
 
-        return f"Sorry, I encountered an error: {e}"
+        return (
+            "I'm sorry, I'm having trouble generating a response "
+            f"right now. Error: {e}"
+        )
 
 
 # =========================================================
@@ -164,28 +172,23 @@ def analyze_sentiment(text):
     polarity = analysis.sentiment.polarity
 
     if polarity > 0.5:
-
         return "Very Positive", polarity
 
     elif polarity > 0.1:
-
         return "Positive", polarity
 
     elif polarity >= -0.1:
-
         return "Neutral", polarity
 
     elif polarity > -0.5:
-
         return "Negative", polarity
 
     else:
-
         return "Very Negative", polarity
 
 
 # =========================================================
-# COPING STRATEGIES
+# COPING / WELLNESS STRATEGIES
 # =========================================================
 
 def provide_coping_strategy(sentiment):
@@ -193,16 +196,17 @@ def provide_coping_strategy(sentiment):
     strategies = {
 
         "Very Positive":
-            "🌟 You're feeling great! Consider writing down "
-            "what made today positive.",
+            "🌟 You're feeling positive! Consider writing down "
+            "what made you feel good today.",
 
         "Positive":
-            "😊 Keep doing the things that are helping you "
-            "feel good.",
+            "😊 Keep doing the things that are helping you feel "
+            "good and connected.",
 
         "Neutral":
             "🌿 Consider doing something you enjoy, such as "
-            "listening to music, journaling, or taking a short walk.",
+            "listening to music, journaling, stretching, or "
+            "taking a short walk.",
 
         "Negative":
             "💙 Consider taking a short break, breathing slowly, "
@@ -220,24 +224,79 @@ def provide_coping_strategy(sentiment):
 
 
 # =========================================================
-# SESSION STATE
+# INITIAL SESSION STATE
 # =========================================================
+
+WELCOME_MESSAGE = (
+    "Hi! I'm EmoCare 💙. I'm here to listen and support you. "
+    "How are you feeling today?"
+)
+
 
 if "messages" not in st.session_state:
 
     st.session_state.messages = [
-
         {
             "role": "assistant",
-            "content":
-                "Hi! I'm EmoCare 💙. I'm here to listen and "
-                "support you. How are you feeling today?"
+            "content": WELCOME_MESSAGE
         }
-
     ]
 
 
 if "mood_tracker" not in st.session_state:
+
+    st.session_state.mood_tracker = []
+
+
+# =========================================================
+# FIX OLD SESSION DATA
+# =========================================================
+#
+# This prevents the TypeError you received:
+# message["role"]
+#
+# Your previous version stored messages as tuples.
+# The new version stores messages as dictionaries.
+#
+# If old data is detected, the conversation is safely reset.
+# =========================================================
+
+valid_messages = True
+
+if not isinstance(st.session_state.messages, list):
+
+    valid_messages = False
+
+else:
+
+    for message in st.session_state.messages:
+
+        if not isinstance(message, dict):
+
+            valid_messages = False
+            break
+
+        if "role" not in message or "content" not in message:
+
+            valid_messages = False
+            break
+
+
+if not valid_messages:
+
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": WELCOME_MESSAGE
+        }
+    ]
+
+
+# =========================================================
+# FIX OLD MOOD TRACKER DATA
+# =========================================================
+
+if not isinstance(st.session_state.mood_tracker, list):
 
     st.session_state.mood_tracker = []
 
@@ -266,64 +325,94 @@ with st.sidebar:
 
     if st.session_state.mood_tracker:
 
-        # Convert stored mood data into DataFrame
+        try:
 
-        mood_data = pd.DataFrame(
+            # Convert mood history into DataFrame
 
-            st.session_state.mood_tracker,
-
-            columns=[
-                "Message",
-                "Sentiment",
-                "Polarity"
-            ]
-
-        )
-
-
-        # Create message numbers for X-axis
-
-        mood_data["Message Number"] = range(
-            1,
-            len(mood_data) + 1
-        )
+            mood_data = pd.DataFrame(
+                st.session_state.mood_tracker,
+                columns=[
+                    "Message",
+                    "Sentiment",
+                    "Polarity"
+                ]
+            )
 
 
-        # Display mood graph
+            # Make sure polarity values are numeric
 
-        st.line_chart(
-
-            mood_data,
-
-            x="Message Number",
-
-            y="Polarity"
-
-        )
+            mood_data["Polarity"] = pd.to_numeric(
+                mood_data["Polarity"],
+                errors="coerce"
+            )
 
 
-        # Display latest mood
+            # Remove invalid values
 
-        latest_sentiment = mood_data.iloc[-1][
-            "Sentiment"
-        ]
-
-
-        st.write(
-            f"Current mood: **{latest_sentiment}**"
-        )
+            mood_data = mood_data.dropna(
+                subset=["Polarity"]
+            )
 
 
-        # Display polarity score
+            # Add sequential message numbers
 
-        latest_polarity = mood_data.iloc[-1][
-            "Polarity"
-        ]
+            mood_data["Message Number"] = range(
+                1,
+                len(mood_data) + 1
+            )
 
 
-        st.write(
-            f"Sentiment score: **{latest_polarity:.2f}**"
-        )
+            if not mood_data.empty:
+
+                # Mood trend graph
+
+                st.line_chart(
+                    mood_data,
+                    x="Message Number",
+                    y="Polarity",
+                    use_container_width=True
+                )
+
+
+                # Latest sentiment
+
+                latest_sentiment = mood_data.iloc[-1][
+                    "Sentiment"
+                ]
+
+
+                latest_polarity = mood_data.iloc[-1][
+                    "Polarity"
+                ]
+
+
+                st.write(
+                    f"Current mood: **{latest_sentiment}**"
+                )
+
+
+                st.write(
+                    f"Sentiment score: **{latest_polarity:.2f}**"
+                )
+
+
+                st.caption(
+                    "Score range: -1 (negative) to +1 (positive)"
+                )
+
+
+            else:
+
+                st.info(
+                    "No valid mood data available yet."
+                )
+
+
+        except Exception:
+
+            st.info(
+                "Start a new conversation to track your mood."
+            )
 
 
     else:
@@ -346,15 +435,14 @@ with st.sidebar:
 
 
     st.write(
-        "If you are in immediate danger, contact your "
-        "local emergency services."
+        "If you are in immediate danger, contact your local "
+        "emergency services."
     )
 
 
     st.write(
-        "You can also reach out to a trusted friend, "
-        "family member, counselor, or qualified mental "
-        "health professional."
+        "You can also reach out to a trusted friend, family "
+        "member, counselor, or qualified mental health professional."
     )
 
 
@@ -362,7 +450,7 @@ with st.sidebar:
 
 
     # =====================================================
-    # CLEAR CONVERSATION BUTTON
+    # CLEAR CONVERSATION
     # =====================================================
 
     if st.button(
@@ -370,24 +458,22 @@ with st.sidebar:
         use_container_width=True
     ):
 
-        # Reset chat
+        # Reset messages
 
         st.session_state.messages = [
-
             {
                 "role": "assistant",
-                "content":
-                    "Hi! I'm EmoCare 💙. I'm here to listen. "
-                    "How are you feeling today?"
+                "content": WELCOME_MESSAGE
             }
-
         ]
 
 
-        # Reset graph
+        # Reset mood tracker and graph
 
         st.session_state.mood_tracker = []
 
+
+        # Refresh application
 
         st.rerun()
 
@@ -398,7 +484,6 @@ with st.sidebar:
 
 st.markdown(
     """
-
     <div class="main-title">
         💙 EmoCare
     </div>
@@ -406,9 +491,7 @@ st.markdown(
     <div class="subtitle">
         Your AI companion for emotional support and mental wellness
     </div>
-
     """,
-
     unsafe_allow_html=True
 )
 
@@ -421,7 +504,6 @@ if len(st.session_state.messages) == 1:
 
     st.markdown(
         """
-
         <div class="welcome-card">
 
             <h3>
@@ -430,31 +512,38 @@ if len(st.session_state.messages) == 1:
 
             <p>
                 Talk about what's on your mind.
-                EmoCare will listen and provide
-                supportive and thoughtful responses.
+                EmoCare will listen and provide supportive
+                and thoughtful responses.
             </p>
 
         </div>
-
         """,
-
         unsafe_allow_html=True
     )
 
 
 # =========================================================
-# DISPLAY CHAT HISTORY
+# DISPLAY EXISTING CHAT HISTORY
 # =========================================================
 
 for message in st.session_state.messages:
 
-    with st.chat_message(
-        message["role"]
+    # Extra safety check
+    # Prevents crash if unexpected session data exists
+
+    if (
+        isinstance(message, dict)
+        and "role" in message
+        and "content" in message
     ):
 
-        st.markdown(
-            message["content"]
-        )
+        with st.chat_message(
+            message["role"]
+        ):
+
+            st.markdown(
+                message["content"]
+            )
 
 
 # =========================================================
@@ -467,23 +556,21 @@ user_message = st.chat_input(
 
 
 # =========================================================
-# PROCESS USER MESSAGE
+# PROCESS NEW USER MESSAGE
 # =========================================================
 
 if user_message:
 
 
     # -----------------------------------------------------
-    # STORE USER MESSAGE
+    # ADD USER MESSAGE TO CHAT HISTORY
     # -----------------------------------------------------
 
     st.session_state.messages.append(
-
         {
             "role": "user",
             "content": user_message
         }
-
     )
 
 
@@ -501,7 +588,7 @@ if user_message:
 
 
     # -----------------------------------------------------
-    # ANALYZE SENTIMENT
+    # ANALYZE USER SENTIMENT
     # -----------------------------------------------------
 
     sentiment, polarity = analyze_sentiment(
@@ -510,17 +597,15 @@ if user_message:
 
 
     # -----------------------------------------------------
-    # STORE SENTIMENT FOR MOOD GRAPH
+    # SAVE SENTIMENT TO MOOD TRACKER
     # -----------------------------------------------------
 
     st.session_state.mood_tracker.append(
-
         (
             user_message,
             sentiment,
-            polarity
+            float(polarity)
         )
-
     )
 
 
@@ -550,38 +635,30 @@ if user_message:
         )
 
 
-        # Generate coping strategy
+        # -------------------------------------------------
+        # WELLNESS SUGGESTION
+        # -------------------------------------------------
 
         coping_strategy = provide_coping_strategy(
             sentiment
         )
 
 
-        # Display wellness suggestion
-
         st.info(
-            f"💡 **Wellness suggestion:** "
-            f"{coping_strategy}"
+            f"💡 **Wellness suggestion:** {coping_strategy}"
         )
 
 
     # -----------------------------------------------------
-    # STORE AI RESPONSE
+    # SAVE AI RESPONSE
     # -----------------------------------------------------
 
     st.session_state.messages.append(
-
         {
             "role": "assistant",
             "content": response
         }
-
     )
-
-
-    # Rerun so sidebar mood graph updates immediately
-
-    st.rerun()
 
 
 # =========================================================
@@ -590,22 +667,32 @@ if user_message:
 
 st.markdown(
     """
-
     <div class="disclaimer">
 
         ⚠️ <b>Important:</b>
 
-        EmoCare is an AI-based emotional support tool
-        and is not a substitute for professional mental
-        health care, diagnosis, or treatment.
+        EmoCare is an AI-based emotional support tool and is
+        not a substitute for professional mental health care,
+        diagnosis, or treatment.
 
         If you are experiencing an emergency or are in
-        immediate danger, contact your local emergency
-        services.
+        immediate danger, contact your local emergency services.
 
     </div>
-
     """,
+    unsafe_allow_html=True
+)
 
+
+# =========================================================
+# FOOTER
+# =========================================================
+
+st.markdown(
+    """
+    <div class="footer">
+        EmoCare 💙 • AI-powered emotional support
+    </div>
+    """,
     unsafe_allow_html=True
 )
