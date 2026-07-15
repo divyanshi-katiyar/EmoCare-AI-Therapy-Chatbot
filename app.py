@@ -494,7 +494,20 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+# =========================================================
+# DISCLAIMER - SHOWN ONCE AT TOP
+# =========================================================
 
+st.warning(
+    """
+    ⚠️ **Important:** EmoCare is an AI-based emotional support tool
+    and is not a substitute for professional mental health care,
+    diagnosis, or treatment.
+
+    If you are experiencing an emergency or are in immediate danger,
+    contact your local emergency services.
+    """
+)
 
 # =========================================================
 # WELCOME CARD
@@ -660,28 +673,6 @@ if user_message:
         }
     )
 
-
-# =========================================================
-# DISCLAIMER
-# =========================================================
-
-st.markdown(
-    """
-    <div class="disclaimer">
-
-        ⚠️ <b>Important:</b>
-
-        EmoCare is an AI-based emotional support tool and is
-        not a substitute for professional mental health care,
-        diagnosis, or treatment.
-
-        If you are experiencing an emergency or are in
-        immediate danger, contact your local emergency services.
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
 
 # =========================================================
